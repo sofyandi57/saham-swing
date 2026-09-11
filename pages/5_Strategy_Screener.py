@@ -11,7 +11,7 @@ from utils.formatting import compact_number, days_ago, last_trading_day, pct, ru
 from utils.state import require_client
 
 st.set_page_config(page_title="Strategy Screener - Swing Saham", page_icon="🧠", layout="wide")
-auth.render_sidebar_widget()
+auth.require_login()
 st.title("🧠 Strategy Screener")
 st.caption(
     "Engine screening berbasis condition-tree (spesifikasi internal) di atas data Invezgo — "

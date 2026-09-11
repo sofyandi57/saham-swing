@@ -11,7 +11,7 @@ from utils.indicators import build_trading_plan, position_size
 from utils.state import require_client
 
 st.set_page_config(page_title="Analisa Saham - Swing Saham", page_icon="📊", layout="wide")
-auth.render_sidebar_widget()
+auth.require_login()
 st.title("📊 Analisa Saham & Trading Plan")
 
 client = require_client()

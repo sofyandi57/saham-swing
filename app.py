@@ -4,13 +4,13 @@ import pandas as pd
 import streamlit as st
 
 from invezgo import InvezgoAPIError
-from utils import auth, key_store
+from utils import auth, key_store, user_store
 from utils.formatting import last_trading_day, pct, rupiah
 from utils.state import get_client
 
 st.set_page_config(page_title="Swing Saham - Invezgo", page_icon="📈", layout="wide")
 
-auth.render_sidebar_widget()
+current_user = auth.require_login()
 
 st.title("📈 Swing Saham — powered by Invezgo API")
 st.caption(
@@ -67,6 +67,46 @@ if auth.is_admin():
         "set juga `INVEZGO_API_KEY` di Streamlit Cloud secrets sebagai cadangan — key dari panel ini akan "
         "dipakai duluan kalau ada, lalu jatuh ke secrets kalau tidak."
     )
+
+    st.divider()
+    st.subheader("👥 Kelola User")
+    st.caption("Buat akun untuk orang lain supaya mereka bisa login sebagai User (tanpa akses API Key).")
+
+    users = user_store.list_users()
+    users_df = pd.DataFrame(users).rename(columns={"username": "Username", "role": "Role"})
+    st.dataframe(users_df, hide_index=True, use_container_width=True)
+
+    with st.expander("➕ Tambah User Baru"):
+        with st.form("add_user_form", clear_on_submit=True):
+            new_username = st.text_input("Username baru")
+            new_password = st.text_input("Password", type="password")
+            new_role = st.selectbox("Role", ["user", "admin"])
+            submit_add = st.form_submit_button("Tambah User")
+        if submit_add:
+            new_username_clean = new_username.strip()
+            if not new_username_clean or not new_password:
+                st.warning("Isi username dan password.")
+            elif user_store.user_exists(new_username_clean):
+                st.error("Username sudah dipakai.")
+            elif len(new_password) < 8:
+                st.error("Password minimal 8 karakter.")
+            else:
+                user_store.add_user(new_username_clean, new_password, new_role)
+                st.success(f"User '{new_username_clean}' ditambahkan dengan role {new_role}.")
+                st.rerun()
+
+    with st.expander("🗑️ Hapus User"):
+        removable = [u["username"] for u in users if u["username"] != current_user["username"]]
+        if removable:
+            to_remove = st.selectbox("Pilih user", removable)
+            if st.button("Hapus User Ini", key="remove_user_btn"):
+                if user_store.remove_user(to_remove):
+                    st.success(f"User '{to_remove}' dihapus.")
+                    st.rerun()
+                else:
+                    st.error("Tidak bisa menghapus user ini (mungkin admin terakhir).")
+        else:
+            st.caption("Tidak ada user lain untuk dihapus.")
 
 st.divider()
 

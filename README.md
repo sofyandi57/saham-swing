@@ -12,12 +12,21 @@ Aplikasi Streamlit untuk riset swing trading saham IDX menggunakan [Invezgo API]
 - **Watchlist & Alert** — kelola grup watchlist pribadi dan alert formula real-time lewat akun Invezgo Anda.
 - **Strategy Screener** — engine screening berbasis *condition tree* (JSON, bukan kode) sesuai spesifikasi internal (`skema-query-screening-engine.md` & `strategi-teknikal-bandarmologi-swing.md`): 11 strategi siap pakai (breakout+broker, stealth accumulation, oversold reversal, trend pullback, broker rotation warning, 5 strategi swing klasik, dan ranking komposit multi-saham), dievaluasi terhadap universe saham pilihan Anda.
 
-## Peran Admin & User
+## Login & Peran Admin/User
 
-Aplikasi punya dua peran, tanpa sistem akun per-pengguna:
+Seluruh aplikasi ada di balik login — tidak ada halaman yang bisa diakses tanpa akun. Dua peran:
 
-- **Admin** — login dengan satu password bersama (`ADMIN_PASSWORD` di secrets) lewat panel "🔐 Admin Login" di sidebar. Setelah login, panel di halaman Home muncul untuk mengisi/mengganti/menghapus Invezgo API Key. Key ini **tidak pernah ditulis ke kode/repo** — tersimpan di berkas lokal terenkripsi (`.data/api_key.enc`, di-gitignore) yang dipakai bersama oleh semua pengguna.
-- **User biasa** — langsung pakai semua fitur aplikasi tanpa login, dan **tidak pernah melihat atau bisa mengisi API Key**. Kalau Admin belum mengisi key, mereka cuma melihat pesan "hubungi admin".
+- **Admin** — bisa mengisi/mengganti/menghapus Invezgo API Key lewat panel di halaman Home, dan membuat/menghapus akun User lain lewat panel "👥 Kelola User" di halaman yang sama.
+- **User** — akun dibuatkan oleh Admin, akses penuh ke semua fitur, tapi **tidak pernah melihat atau bisa mengisi API Key**.
+
+Akun tersimpan ter-hash (PBKDF2, bukan plaintext) di `.data/users.json` (di-gitignore) lewat `utils/user_store.py`. Saat aplikasi pertama kali dijalankan (belum ada berkas ini), sebuah akun Admin default otomatis dibuat:
+
+```
+Username: sofyandisedar
+Password: Saya1234!
+```
+
+**Segera login dan ganti password default ini** lewat "🔑 Ganti Password Saya" di sidebar. API Key Invezgo sendiri **tidak pernah ditulis ke kode/repo** — tersimpan terpisah di berkas lokal terenkripsi (`.data/api_key.enc`, di-gitignore) yang dipakai bersama oleh semua akun.
 
 Dapatkan API key Invezgo di [invezgo.com/id/setting/api](https://invezgo.com/id/setting/api) (butuh paket langganan aktif).
 
@@ -25,8 +34,7 @@ Dapatkan API key Invezgo di [invezgo.com/id/setting/api](https://invezgo.com/id/
 
 | Secret | Wajib? | Fungsi |
 |---|---|---|
-| `ADMIN_PASSWORD` | Wajib untuk panel Admin | Password login admin. Tanpa ini, panel Admin tidak bisa diakses sama sekali. |
-| `APP_SECRET_KEY` | Disarankan | Kunci enkripsi untuk API Key yang disimpan Admin. Tanpa ini, key tetap tersimpan tapi hanya di-obfuscate (base64), bukan dienkripsi. |
+| `APP_SECRET_KEY` | Disarankan | Kunci enkripsi untuk API Key yang disimpan Admin. Tanpa ini, key tetap tersimpan tapi hanya di-obfuscate (base64), bukan dienkripsi. Tidak mempengaruhi login (password akun selalu di-hash, terlepas dari secret ini). |
 | `INVEZGO_API_KEY` | Opsional (cadangan) | Dipakai kalau berkas key lokal belum/tidak ada — lihat catatan persistensi di bawah. |
 
 ### Persistensi API Key
@@ -44,13 +52,13 @@ streamlit run app.py
 
 1. Push repo ini ke GitHub (repo boleh publik — tidak ada key yang ter-commit).
 2. Buka [share.streamlit.io](https://share.streamlit.io), hubungkan repo, pilih `app.py` sebagai entry point.
-3. Isi `ADMIN_PASSWORD` (wajib), `APP_SECRET_KEY` (disarankan), dan `INVEZGO_API_KEY` (opsional, cadangan) di Settings → Secrets.
-4. Buka app, login sebagai Admin di sidebar, lalu isi API Key lewat panel di halaman Home. Selesai — pengguna lain langsung bisa pakai aplikasi tanpa setup apapun.
+3. Isi `APP_SECRET_KEY` (disarankan) dan `INVEZGO_API_KEY` (opsional, cadangan) di Settings → Secrets.
+4. Buka app, login pakai akun Admin default (`sofyandisedar` / `Saya1234!`), **langsung ganti passwordnya**, isi API Key lewat panel di Home, lalu buat akun untuk User lain lewat "👥 Kelola User".
 
 ## Struktur Project
 
 ```
-app.py                      # Home: panel Admin (login + kelola API key) + ringkasan pasar
+app.py                      # Home: panel Admin (kelola API key + kelola user) + ringkasan pasar
 pages/
   1_Screener.py
   2_Analisa_Saham.py
@@ -59,7 +67,8 @@ pages/
   5_Strategy_Screener.py
 invezgo/client.py           # Wrapper tipis untuk Invezgo REST API
 utils/
-  auth.py                   # Login/logout admin (session-based) + widget sidebar
+  auth.py                   # Gerbang login seluruh app (require_login), ganti password sendiri
+  user_store.py             # Akun ter-hash (PBKDF2) persisten, role admin/user
   key_store.py              # Penyimpanan API key persisten terenkripsi (dipakai lintas sesi/user)
   indicators.py             # ATR, fractal S/R, trading plan, lot sizing (dipakai Analisa Saham)
   formatting.py             # Format Rupiah/angka/tanggal

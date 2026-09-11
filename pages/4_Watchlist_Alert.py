@@ -6,7 +6,7 @@ from utils import auth
 from utils.state import require_client
 
 st.set_page_config(page_title="Watchlist & Alert - Swing Saham", page_icon="⭐", layout="wide")
-auth.render_sidebar_widget()
+auth.require_login()
 st.title("⭐ Watchlist & Alert")
 
 client = require_client()
