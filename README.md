@@ -16,8 +16,18 @@ Aplikasi Streamlit untuk riset swing trading saham IDX menggunakan [Invezgo API]
 
 Seluruh aplikasi ada di balik login — tidak ada halaman yang bisa diakses tanpa akun. Dua peran:
 
-- **Admin** — bisa mengisi/mengganti/menghapus Invezgo API Key lewat panel di halaman Home, dan membuat/menghapus akun User lain lewat panel "👥 Kelola User" di halaman yang sama.
-- **User** — akun dibuatkan oleh Admin, akses penuh ke semua fitur, tapi **tidak pernah melihat atau bisa mengisi API Key**.
+- **Admin** — bisa mengisi/mengganti/menghapus Invezgo API Key lewat panel di halaman Home, membuat/menghapus akun User lain lewat panel "👥 Kelola User", dan mengaktifkan pendaftaran mandiri lewat panel "🎟️ Kode Registrasi".
+- **User** — akun dibuatkan oleh Admin **atau daftar sendiri** lewat tab "Daftar" di halaman login (butuh kode undangan dari Admin — self-registration selalu menghasilkan role User, tidak pernah Admin). Akses penuh ke semua fitur, tapi **tidak pernah melihat atau bisa mengisi API Key**.
+
+### Pendaftaran mandiri (untuk teman)
+
+Di halaman login ada tab **Daftar** di samping **Masuk**. Supaya teman Anda bisa daftar akun sendiri:
+
+1. Login sebagai Admin, buka panel "🎟️ Kode Registrasi" di Home, klik **Generate Kode Baru**.
+2. Bagikan kode itu ke teman Anda (chat, dsb).
+3. Teman buka tab **Daftar**, isi username/password sendiri + kode itu → langsung punya akun dan masuk otomatis, dengan role User.
+
+Nonaktifkan registrasi kapan saja lewat tombol **Nonaktifkan Registrasi** di panel yang sama (akun yang sudah terdaftar tidak terpengaruh, cuma pendaftaran baru yang ditutup).
 
 Akun tersimpan ter-hash (PBKDF2, bukan plaintext) di `.data/users.json` (di-gitignore) lewat `utils/user_store.py`. Saat aplikasi pertama kali dijalankan (belum ada berkas ini), sebuah akun Admin default otomatis dibuat:
 
@@ -67,8 +77,9 @@ pages/
   5_Strategy_Screener.py
 invezgo/client.py           # Wrapper tipis untuk Invezgo REST API
 utils/
-  auth.py                   # Gerbang login seluruh app (require_login), ganti password sendiri
+  auth.py                   # Gerbang login seluruh app (require_login), tab Daftar, ganti password sendiri
   user_store.py             # Akun ter-hash (PBKDF2) persisten, role admin/user
+  invite_store.py           # Kode undangan registrasi mandiri (dikelola Admin)
   key_store.py              # Penyimpanan API key persisten terenkripsi (dipakai lintas sesi/user)
   indicators.py             # ATR, fractal S/R, trading plan, lot sizing (dipakai Analisa Saham)
   formatting.py             # Format Rupiah/angka/tanggal
@@ -83,6 +94,9 @@ screening/                  # Engine Strategy Screener
 tests/
   test_engine_offline.py    # Smoke test field registry + semua strategi pakai data sintetis (tanpa API call)
   test_engine_run.py        # Smoke test run_screening/run_ranking end-to-end pakai fake client
+  test_key_store_offline.py # Round-trip simpan/baca API key, mode terenkripsi vs fallback
+  test_user_store_offline.py# Seeding admin default, login, ganti password, guard admin terakhir
+  test_registration_offline.py # Gating kode undangan, role selalu "user", validasi input
 ```
 
 Jalankan smoke test (tanpa API key, tanpa panggilan jaringan):
@@ -90,6 +104,9 @@ Jalankan smoke test (tanpa API key, tanpa panggilan jaringan):
 ```bash
 python -m tests.test_engine_offline
 python -m tests.test_engine_run
+python -m tests.test_key_store_offline
+python -m tests.test_user_store_offline
+python -m tests.test_registration_offline
 ```
 
 ## Batasan

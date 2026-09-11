@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from invezgo import InvezgoAPIError
-from utils import auth, key_store, user_store
+from utils import auth, invite_store, key_store, user_store
 from utils.formatting import last_trading_day, pct, rupiah
 from utils.state import get_client
 
@@ -107,6 +107,41 @@ if auth.is_admin():
                     st.error("Tidak bisa menghapus user ini (mungkin admin terakhir).")
         else:
             st.caption("Tidak ada user lain untuk dihapus.")
+
+    st.divider()
+    st.subheader("🎟️ Kode Registrasi")
+    st.caption(
+        "Bagikan kode ini ke teman yang ingin daftar akun sendiri lewat tab **Daftar** di halaman login "
+        "— mereka selalu mendapat role User, tidak pernah Admin."
+    )
+
+    if invite_store.is_configured():
+        st.success("Registrasi aktif — bagikan kode di bawah ini.")
+        st.code(invite_store.get_code(), language=None)
+    else:
+        st.info("Registrasi belum aktif. Buat kode untuk mengaktifkannya.")
+
+    col_gen, col_clear = st.columns(2)
+    if col_gen.button("🎲 Generate Kode Baru", use_container_width=True):
+        invite_store.set_code(invite_store.generate_code())
+        st.rerun()
+    if col_clear.button(
+        "🚫 Nonaktifkan Registrasi", use_container_width=True, disabled=not invite_store.is_configured()
+    ):
+        invite_store.clear_code()
+        st.rerun()
+
+    with st.expander("Atau set kode custom"):
+        with st.form("custom_code_form", clear_on_submit=True):
+            custom_code = st.text_input("Kode custom")
+            submit_custom = st.form_submit_button("Simpan Kode")
+        if submit_custom:
+            if custom_code.strip():
+                invite_store.set_code(custom_code.strip())
+                st.success("Kode disimpan.")
+                st.rerun()
+            else:
+                st.warning("Isi kode terlebih dahulu.")
 
 st.divider()
 
