@@ -6,10 +6,12 @@ import streamlit as st
 from invezgo import InvezgoAPIError
 from screening import engine
 from screening.condition_tree import FieldError
+from utils import auth
 from utils.formatting import compact_number, days_ago, last_trading_day, pct, rupiah
 from utils.state import require_client
 
 st.set_page_config(page_title="Strategy Screener - Swing Saham", page_icon="🧠", layout="wide")
+auth.render_sidebar_widget()
 st.title("🧠 Strategy Screener")
 st.caption(
     "Engine screening berbasis condition-tree (spesifikasi internal) di atas data Invezgo — "

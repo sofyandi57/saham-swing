@@ -4,33 +4,13 @@ import pandas as pd
 import streamlit as st
 
 from invezgo import InvezgoAPIError
+from utils import auth, key_store
 from utils.formatting import last_trading_day, pct, rupiah
-from utils.state import get_client, get_api_key
+from utils.state import get_client
 
 st.set_page_config(page_title="Swing Saham - Invezgo", page_icon="📈", layout="wide")
 
-with st.sidebar:
-    st.header("🔑 Invezgo API Key")
-    st.caption(
-        "Key hanya disimpan di sesi browser Anda saat ini (tidak ditulis ke kode/repo). "
-        "Dapatkan key di [invezgo.com/id/setting/api](https://invezgo.com/id/setting/api)."
-    )
-    existing = st.session_state.get("invezgo_api_key", "")
-    api_key_input = st.text_input("API Key", value=existing, type="password", placeholder="ivz_xxx...")
-    col_a, col_b = st.columns(2)
-    if col_a.button("Simpan", use_container_width=True):
-        st.session_state["invezgo_api_key"] = api_key_input.strip()
-        st.rerun()
-    if col_b.button("Hapus", use_container_width=True):
-        st.session_state.pop("invezgo_api_key", None)
-        st.session_state.pop("_client", None)
-        st.session_state.pop("_client_key", None)
-        st.rerun()
-
-    if get_api_key():
-        st.success("API Key aktif untuk sesi ini.")
-    else:
-        st.info("Belum ada API Key. Fitur data akan terkunci sampai key diisi.")
+auth.render_sidebar_widget()
 
 st.title("📈 Swing Saham — powered by Invezgo API")
 st.caption(
@@ -38,6 +18,55 @@ st.caption(
     "bandarmologi (broker flow), watchlist & alert. **Bukan rekomendasi/ajakan jual-beli — "
     "murni alat bantu riset & edukasi.**"
 )
+
+if auth.is_admin():
+    st.divider()
+    st.subheader("🔐 Panel Admin — Invezgo API Key")
+    st.caption(
+        "Key ini dipakai bersama oleh semua pengguna aplikasi — mereka tidak pernah melihat "
+        "atau perlu mengisi key ini sendiri."
+    )
+
+    if key_store.is_configured():
+        st.success("API Key aktif dan tersimpan.")
+    else:
+        st.warning("Belum ada API Key tersimpan. Aplikasi tidak akan berfungsi untuk pengguna sampai diisi.")
+
+    if not key_store.is_encrypted():
+        st.warning(
+            "⚠️ `APP_SECRET_KEY` belum diset di Streamlit secrets — key tersimpan tanpa enkripsi kuat. "
+            "Disarankan set `APP_SECRET_KEY` (string acak bebas) untuk keamanan lebih baik."
+        )
+
+    with st.form("update_key_form", clear_on_submit=True):
+        new_key = st.text_input("API Key baru", type="password", placeholder="ivz_xxx...")
+        col_a, col_b = st.columns(2)
+        save_clicked = col_a.form_submit_button("💾 Simpan", use_container_width=True)
+        clear_clicked = col_b.form_submit_button("🗑️ Hapus Key Tersimpan", use_container_width=True)
+
+    if save_clicked:
+        if new_key.strip():
+            key_store.save_api_key(new_key.strip())
+            st.session_state.pop("_client", None)
+            st.session_state.pop("_client_key", None)
+            st.success("API Key disimpan.")
+            st.rerun()
+        else:
+            st.warning("Isi API Key terlebih dahulu.")
+
+    if clear_clicked:
+        key_store.clear_api_key()
+        st.session_state.pop("_client", None)
+        st.session_state.pop("_client_key", None)
+        st.info("API Key dihapus dari penyimpanan lokal (kembali ke `INVEZGO_API_KEY` di secrets, jika ada).")
+        st.rerun()
+
+    st.caption(
+        "Catatan persistensi: key tersimpan di berkas lokal terenkripsi dan bertahan lintas sesi/pengguna "
+        "selama container aplikasi tidak di-*redeploy*. Untuk persistensi permanen (bertahan lintas redeploy), "
+        "set juga `INVEZGO_API_KEY` di Streamlit Cloud secrets sebagai cadangan — key dari panel ini akan "
+        "dipakai duluan kalau ada, lalu jatuh ke secrets kalau tidak."
+    )
 
 st.divider()
 
@@ -63,7 +92,10 @@ st.divider()
 
 client = get_client()
 if client is None:
-    st.info("👈 Masukkan API Key di sidebar untuk melihat ringkasan pasar hari ini.")
+    if auth.is_admin():
+        st.info("👆 Isi API Key di panel Admin di atas untuk mengaktifkan aplikasi.")
+    else:
+        st.info("Aplikasi belum dikonfigurasi oleh admin. Silakan hubungi admin aplikasi ini.")
 else:
     st.subheader("Ringkasan Pasar")
     default_date = last_trading_day()

@@ -5,10 +5,12 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from invezgo import InvezgoAPIError
+from utils import auth
 from utils.formatting import compact_number, days_ago, last_trading_day, rupiah
 from utils.state import require_client
 
 st.set_page_config(page_title="Bandarmologi - Swing Saham", page_icon="🕵️", layout="wide")
+auth.render_sidebar_widget()
 st.title("🕵️ Bandarmologi & Broker Flow")
 st.caption("Data broker summary, akumulasi, dan aliran dana dari Invezgo. Reader/edukasi — bukan ajakan transaksi.")
 

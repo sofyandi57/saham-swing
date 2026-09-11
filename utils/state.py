@@ -3,12 +3,18 @@ from __future__ import annotations
 import streamlit as st
 
 from invezgo import InvezgoClient
+from utils import auth, key_store
 
 
 def get_api_key() -> str | None:
-    key = st.session_state.get("invezgo_api_key")
-    if key:
-        return key
+    """Resolve the shared Invezgo API key. Admin-configured persistent
+    storage takes precedence; `INVEZGO_API_KEY` in secrets is the durable
+    fallback baseline (survives redeploys that wipe the local key store).
+    Regular Users never supply a key themselves — this is the only source.
+    """
+    stored = key_store.load_api_key()
+    if stored:
+        return stored
     try:
         secret_key = st.secrets.get("INVEZGO_API_KEY")
     except Exception:
@@ -29,7 +35,10 @@ def get_client() -> InvezgoClient | None:
 def require_client() -> InvezgoClient:
     client = get_client()
     if client is None:
-        st.warning("Masukkan Invezgo API Key Anda di halaman **Home** terlebih dahulu.")
-        st.page_link("app.py", label="Ke halaman Home", icon="🏠")
+        if auth.is_admin():
+            st.warning("API Key belum dikonfigurasi. Isi di panel Admin pada halaman **Home**.")
+            st.page_link("app.py", label="Ke halaman Home", icon="🏠")
+        else:
+            st.info("Aplikasi belum dikonfigurasi oleh admin. Silakan hubungi admin aplikasi ini.")
         st.stop()
     return client

@@ -2,10 +2,12 @@ import pandas as pd
 import streamlit as st
 
 from invezgo import InvezgoAPIError
+from utils import auth
 from utils.formatting import compact_number, last_trading_day, pct, rupiah
 from utils.state import require_client
 
 st.set_page_config(page_title="Screener - Swing Saham", page_icon="🔍", layout="wide")
+auth.render_sidebar_widget()
 st.title("🔍 Screener Saham")
 
 client = require_client()

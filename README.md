@@ -12,13 +12,26 @@ Aplikasi Streamlit untuk riset swing trading saham IDX menggunakan [Invezgo API]
 - **Watchlist & Alert** — kelola grup watchlist pribadi dan alert formula real-time lewat akun Invezgo Anda.
 - **Strategy Screener** — engine screening berbasis *condition tree* (JSON, bukan kode) sesuai spesifikasi internal (`skema-query-screening-engine.md` & `strategi-teknikal-bandarmologi-swing.md`): 11 strategi siap pakai (breakout+broker, stealth accumulation, oversold reversal, trend pullback, broker rotation warning, 5 strategi swing klasik, dan ranking komposit multi-saham), dievaluasi terhadap universe saham pilihan Anda.
 
-## API Key
+## Peran Admin & User
 
-Aplikasi ini **tidak menyimpan API key di kode atau repo**. Saat dijalankan, masukkan API Key Invezgo Anda di sidebar (field password) — key hanya hidup di sesi browser Anda.
+Aplikasi punya dua peran, tanpa sistem akun per-pengguna:
 
-Dapatkan API key di [invezgo.com/id/setting/api](https://invezgo.com/id/setting/api) (butuh paket langganan aktif).
+- **Admin** — login dengan satu password bersama (`ADMIN_PASSWORD` di secrets) lewat panel "🔐 Admin Login" di sidebar. Setelah login, panel di halaman Home muncul untuk mengisi/mengganti/menghapus Invezgo API Key. Key ini **tidak pernah ditulis ke kode/repo** — tersimpan di berkas lokal terenkripsi (`.data/api_key.enc`, di-gitignore) yang dipakai bersama oleh semua pengguna.
+- **User biasa** — langsung pakai semua fitur aplikasi tanpa login, dan **tidak pernah melihat atau bisa mengisi API Key**. Kalau Admin belum mengisi key, mereka cuma melihat pesan "hubungi admin".
 
-Untuk deployment pribadi, Anda juga bisa mengisi `INVEZGO_API_KEY` di Streamlit secrets (lihat `.streamlit/secrets.toml.example`) supaya key terisi otomatis — file ini di-gitignore dan tidak pernah masuk ke repo publik.
+Dapatkan API key Invezgo di [invezgo.com/id/setting/api](https://invezgo.com/id/setting/api) (butuh paket langganan aktif).
+
+### Secrets yang perlu diisi (lihat `.streamlit/secrets.toml.example`)
+
+| Secret | Wajib? | Fungsi |
+|---|---|---|
+| `ADMIN_PASSWORD` | Wajib untuk panel Admin | Password login admin. Tanpa ini, panel Admin tidak bisa diakses sama sekali. |
+| `APP_SECRET_KEY` | Disarankan | Kunci enkripsi untuk API Key yang disimpan Admin. Tanpa ini, key tetap tersimpan tapi hanya di-obfuscate (base64), bukan dienkripsi. |
+| `INVEZGO_API_KEY` | Opsional (cadangan) | Dipakai kalau berkas key lokal belum/tidak ada — lihat catatan persistensi di bawah. |
+
+### Persistensi API Key
+
+Key yang diisi Admin lewat panel tersimpan di berkas lokal dan bertahan lintas sesi & lintas pengguna selama container aplikasi tidak di-*redeploy*. Di Streamlit Community Cloud, *redeploy* (push commit baru) melakukan clone ulang repo sehingga berkas lokal ini hilang — supaya key tetap "hidup selamanya" walau begitu, isi juga `INVEZGO_API_KEY` di secrets sebagai cadangan permanen (secrets Streamlit Cloud tidak ikut hilang saat redeploy). Urutan prioritas: key dari panel Admin dipakai duluan kalau ada, baru jatuh ke `INVEZGO_API_KEY`.
 
 ## Menjalankan secara lokal
 
@@ -31,12 +44,13 @@ streamlit run app.py
 
 1. Push repo ini ke GitHub (repo boleh publik — tidak ada key yang ter-commit).
 2. Buka [share.streamlit.io](https://share.streamlit.io), hubungkan repo, pilih `app.py` sebagai entry point.
-3. (Opsional) Isi secret `INVEZGO_API_KEY` di Settings → Secrets jika ingin key terisi otomatis. Jika tidak, setiap pengguna cukup mengisi API key mereka sendiri di sidebar saat membuka app.
+3. Isi `ADMIN_PASSWORD` (wajib), `APP_SECRET_KEY` (disarankan), dan `INVEZGO_API_KEY` (opsional, cadangan) di Settings → Secrets.
+4. Buka app, login sebagai Admin di sidebar, lalu isi API Key lewat panel di halaman Home. Selesai — pengguna lain langsung bisa pakai aplikasi tanpa setup apapun.
 
 ## Struktur Project
 
 ```
-app.py                      # Home: input API key + ringkasan pasar
+app.py                      # Home: panel Admin (login + kelola API key) + ringkasan pasar
 pages/
   1_Screener.py
   2_Analisa_Saham.py
@@ -45,9 +59,11 @@ pages/
   5_Strategy_Screener.py
 invezgo/client.py           # Wrapper tipis untuk Invezgo REST API
 utils/
+  auth.py                   # Login/logout admin (session-based) + widget sidebar
+  key_store.py              # Penyimpanan API key persisten terenkripsi (dipakai lintas sesi/user)
   indicators.py             # ATR, fractal S/R, trading plan, lot sizing (dipakai Analisa Saham)
   formatting.py             # Format Rupiah/angka/tanggal
-  state.py                  # Helper session_state untuk API key & client
+  state.py                  # Resolusi API key (key_store -> secrets) & client
 screening/                  # Engine Strategy Screener
   technicals.py             # Field Registry teknikal (SMA/EMA/MACD/RSI/ATR/ADX/Donchian/OBV/VWAP, dll)
   broker.py                 # Field Registry bandarmologi (broker_net_value, inventory, konsentrasi top-5)
