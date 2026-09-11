@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "id": "oversold_bounce",
+  "name": "Oversold Bounce (Mean Reversion)",
+  "thesis": "Versi price-only dari Oversold Reversal: RSI oversold di area support, tanpa syarat broker. Berguna sebagai baseline pembanding — kalau saham lolos strategi ini tapi tidak lolos Oversold Reversal (broker belum masuk), reversal-nya masih spekulatif.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "rsi14", "op": "<", "value": 30 },
+      { "field": "dist_to_support_pct", "op": "between", "value": [0, 3] },
+      {
+        "or": [
+          { "field": "candlestick_pattern", "op": "==", "value": "hammer" },
+          { "field": "candlestick_pattern", "op": "==", "value": "dragonfly_doji" },
+          { "field": "candlestick_pattern", "op": "==", "value": "bullish_engulfing" }
+        ]
+      }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

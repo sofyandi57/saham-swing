@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "id": "breakout_broker_confirm",
+  "name": "Breakout dengan Konfirmasi Broker",
+  "thesis": "Breakout tanpa dukungan smart money sering jadi bull trap: ritel FOMO masuk, broker besar justru pakai likuiditas breakout untuk keluar. Breakout yang dikonfirmasi broker net buy jauh lebih valid.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "close", "op": ">", "value_field": "donchian20_upper" },
+      { "field": "volume_spike_ratio", "op": ">", "value": 1.5 },
+      { "field": "broker_net_value_top5", "agg": "sum", "window": 3, "op": ">", "value": 0 },
+      { "field": "adx14", "op": ">", "value": 20 }
+    ]
+  },
+  "exclude_if": {
+    "field": "broker_net_value_top5", "agg": "sum", "window": 1, "op": "<", "value": 0
+  },
+  "confirmations": [
+    { "field": "broker_net_value", "agg": "streak_positive", "op": ">=", "value": 5 }
+  ],
+  "scoring": null
+}

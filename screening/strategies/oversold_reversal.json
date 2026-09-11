@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "id": "oversold_reversal",
+  "name": "Reversal dari Oversold dengan Broker Mulai Masuk",
+  "thesis": "RSI oversold sendirian bukan sinyal beli (saham bisa oversold lalu makin oversold). Pembedanya adalah apakah smart money mulai memungut di harga bawah.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "rsi14", "op": "<", "value": 35 },
+      { "field": "rsi14", "agg": "slope", "window": 3, "op": "==", "value": "up" },
+      { "field": "broker_net_value", "agg": "sign_change", "from": "negative", "to": "positive", "window": 3 },
+      { "field": "close", "op": ">", "value_field": "donchian20_lower" }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [
+    { "field": "volume_spike_ratio", "op": ">", "value": 1.2 }
+  ],
+  "scoring": null
+}

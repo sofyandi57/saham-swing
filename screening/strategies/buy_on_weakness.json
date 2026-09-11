@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "id": "buy_on_weakness",
+  "name": "Buy on Weakness (versi swing praktis)",
+  "thesis": "Pullback jangka pendek di dalam uptrend yang masih intak adalah kelanjutan tren, bukan pembalikan. Beda dari Oversold Reversal: di sini pullback-nya moderat (RSI netral, bukan oversold ekstrem).",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "close", "op": ">", "value_field": "sma50" },
+      { "field": "dist_to_ema21_atr", "op": "between", "value": [-1, 1] },
+      { "field": "rsi14", "op": "between", "value": [40, 55] }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

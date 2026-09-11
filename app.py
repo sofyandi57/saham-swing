@@ -42,7 +42,7 @@ st.caption(
 st.divider()
 
 st.subheader("Navigasi")
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 with c1:
     st.page_link("pages/1_Screener.py", label="🔍 Screener", icon="🔍")
     st.caption("Top gainers/losers, akumulasi asing/ritel, & custom formula screener.")
@@ -55,6 +55,9 @@ with c3:
 with c4:
     st.page_link("pages/4_Watchlist_Alert.py", label="⭐ Watchlist & Alert", icon="⭐")
     st.caption("Kelola watchlist pribadi dan alert formula real-time.")
+with c5:
+    st.page_link("pages/5_Strategy_Screener.py", label="🧠 Strategy Screener", icon="🧠")
+    st.caption("11 strategi swing + bandarmologi siap pakai, plus ranking komposit multi-saham.")
 
 st.divider()
 

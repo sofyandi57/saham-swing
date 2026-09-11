@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "id": "pullback_to_ma",
+  "name": "Pullback to Moving Average (dengan candle konfirmasi)",
+  "thesis": "Varian klasik yang mensyaratkan candle konfirmasi, beda tipis dari Buy on Weakness yang murni threshold angka. Entry pada retracement ke MA kunci lebih presisi kalau ditunggu sampai muncul candle konfirmasi.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "close", "op": ">", "value_field": "sma50" },
+      { "field": "low_dist_to_ema21_atr", "op": "between", "value": [-1, 1] },
+      {
+        "or": [
+          { "field": "candlestick_pattern", "op": "==", "value": "bullish_engulfing" },
+          { "field": "candlestick_pattern", "op": "==", "value": "hammer" },
+          { "field": "candlestick_pattern", "op": "==", "value": "inside_day_break" }
+        ]
+      }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

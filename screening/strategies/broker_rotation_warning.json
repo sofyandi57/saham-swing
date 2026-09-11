@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "id": "broker_rotation_warning",
+  "name": "Broker Rotation / Divergence — Sinyal Waspada",
+  "thesis": "Dipakai untuk saham yang sudah dipegang, bukan screening beli baru. Kalau broker yang tadinya top akumulator mulai net sell sementara harga masih terlihat naik, itu tanda distribusi ke ritel.",
+  "output_type": "warning",
+  "universe_filter": {
+    "field": "history_days_available", "op": ">=", "value": 30
+  },
+  "conditions": {
+    "and": [
+      { "field": "broker_net_value", "agg": "streak_negative", "window": 3, "op": ">=", "value": 3 },
+      { "field": "close", "op": ">=", "value_field": "sma20" }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

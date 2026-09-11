@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "id": "stealth_accumulation",
+  "name": "Akumulasi Diam-diam (Stealth Accumulation)",
+  "thesis": "Pola klasik Wyckoff Phase C->D: bandar mengumpulkan barang di rentang sempit sebelum markup, supaya harga rata-rata rendah. Ini terjadi sebelum breakout kelihatan di chart.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "donchian20_width_pct", "op": "<", "value": 8 },
+      { "field": "broker_net_value", "agg": "streak_positive", "op": ">=", "value": 5 },
+      { "field": "broker_concentration_top5", "agg": "slope", "window": 20, "op": "==", "value": "up" },
+      { "field": "obv_slope", "op": ">", "value": 0 },
+      { "field": "close", "agg": "pct_change", "window": 10, "op": "between", "value": [-0.03, 0.03] }
+    ]
+  },
+  "exclude_if": {
+    "field": "broker_net_value", "agg": "avg", "window": 20, "op": "<=", "value": 0
+  },
+  "confirmations": [
+    { "field": "broker_net_value_top5", "agg": "sum", "window": 5, "op": ">", "value": 0 }
+  ],
+  "scoring": null
+}

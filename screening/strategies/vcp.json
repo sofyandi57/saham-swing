@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "id": "vcp",
+  "name": "VCP (Volatility Contraction Pattern)",
+  "thesis": "Padanan Barat dari Stealth Accumulation tapi versi murni harga, tanpa lapisan broker. Rangkaian pullback yang makin menyempit menandakan supply sedang habis diserap; volume biasanya mengering saat konsolidasi lalu meledak saat breakout.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "donchian20_width_pct", "agg": "pct_change", "window": 10, "op": "<", "value": 0 },
+      { "field": "avg_value_20d", "agg": "slope", "window": 20, "op": "==", "value": "down" },
+      { "field": "close", "op": ">", "value_field": "donchian20_upper" },
+      { "field": "volume_spike_ratio", "op": ">", "value": 1.5 }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

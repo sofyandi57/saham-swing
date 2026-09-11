@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "id": "trend_pullback",
+  "name": "Trend Continuation — Pullback ke VWAP-Anchor",
+  "thesis": "Dalam uptrend sehat, harga biasanya pullback ke area rata-rata lalu lanjut naik, bukan langsung berbalik total. Setup swing paling umum dengan risk-reward yang jelas.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "close", "op": ">", "value_field": "sma50" },
+      { "field": "sma50", "op": ">", "value_field": "sma200" },
+      { "field": "dist_to_vwap_atr", "op": "between", "value": [-2, 2] },
+      {
+        "or": [
+          { "field": "macd_hist", "op": ">", "value": 0 },
+          { "field": "macd_hist", "agg": "slope", "window": 3, "op": "==", "value": "up" }
+        ]
+      },
+      { "field": "broker_net_value_top5", "agg": "sum", "window": 5, "op": ">=", "value": 0 }
+    ]
+  },
+  "exclude_if": {
+    "field": "broker_net_value", "agg": "sum", "window": 1, "op": "<", "value": 0
+  },
+  "confirmations": [
+    { "field": "volume_spike_ratio", "agg": "avg", "window": 5, "op": "<", "value": 1.0 },
+    { "field": "volume_spike_ratio", "op": ">", "value": 1.2 }
+  ],
+  "scoring": null
+}

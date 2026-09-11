@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "id": "momentum_follow_through",
+  "name": "Momentum Follow-Through",
+  "thesis": "Breakout dari konsolidasi disertai volume tinggi cenderung berlanjut dalam waktu dekat. Sengaja tidak mensyaratkan konfirmasi broker — murni price+volume, cocok sebagai pembanding independen dari 'Breakout dengan Konfirmasi Broker'.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "close", "op": ">", "value_field": "donchian20_upper" },
+      { "field": "volume_spike_ratio", "op": ">", "value": 1.5 },
+      { "field": "adx14", "op": ">", "value": 20 },
+      { "field": "adx14", "agg": "slope", "window": 3, "op": "==", "value": "up" }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "id": "composite_ranking",
+  "name": "Skor Komposit Multi-Saham",
+  "thesis": "Screening lintas seluruh universe untuk mencari 'saham-saham yang bagus', bukan analisis satu saham. Skor dinormalisasi sebagai percentile rank lintas universe hari itu, supaya skor 80 selalu berarti 'top 20% hari itu' apa pun kondisi pasar.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 2000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "scoring": {
+    "normalization": "percentile_rank_within_universe",
+    "components": [
+      { "name": "skor_tren", "weight": 0.30, "fields": ["sma20", "sma50", "sma200", "adx14"] },
+      { "name": "skor_konviksi_broker", "weight": 0.35, "fields": ["broker_net_value_top5", "broker_net_value_streak", "broker_concentration_top5"] },
+      { "name": "skor_momentum", "weight": 0.20, "fields": ["rsi14", "macd_hist", "roc10"] },
+      { "name": "skor_volume", "weight": 0.15, "fields": ["volume_spike_ratio", "obv_slope"] }
+    ]
+  },
+  "output": { "rank_by": "score_total", "direction": "desc", "top_n": 20 }
+}
