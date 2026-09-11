@@ -10,7 +10,8 @@ Aplikasi Streamlit untuk riset swing trading saham IDX menggunakan [Invezgo API]
 - **Analisa Saham** — candlestick + deteksi support/resistance otomatis (fractal swing) + trading plan (entry/stop/target berbasis ATR) + kalkulator lot sizing.
 - **Bandarmologi** — broker summary, inventory chart (akumulasi broker dari waktu ke waktu), sankey aliran dana antar broker, dan broker stalker.
 - **Watchlist & Alert** — kelola grup watchlist pribadi dan alert formula real-time lewat akun Invezgo Anda.
-- **Strategy Screener** — engine screening berbasis *condition tree* (JSON, bukan kode) sesuai spesifikasi internal (`skema-query-screening-engine.md` & `strategi-teknikal-bandarmologi-swing.md`): 11 strategi siap pakai (breakout+broker, stealth accumulation, oversold reversal, trend pullback, broker rotation warning, 5 strategi swing klasik, dan ranking komposit multi-saham), dievaluasi terhadap universe saham pilihan Anda.
+- **Strategy Screener** — engine screening berbasis *condition tree* (JSON, bukan kode) sesuai spesifikasi internal (`skema-query-screening-engine.md` & `strategi-teknikal-bandarmologi-swing.md`): 13 strategi siap pakai (breakout+broker, stealth accumulation, oversold reversal, trend pullback, broker rotation warning, 5 strategi swing klasik, BPJS, Under Value, dan ranking komposit multi-saham), dievaluasi terhadap universe saham pilihan Anda.
+- **Rekomendasi** — presentasi terkurasi dari tiga strategi di atas, siap pakai tanpa perlu konfigurasi: **Swing** (`composite_ranking`), **BPJS/Beli Pagi Jual Sore** (`bpjs_intraday`, jalankan pagi hari untuk hasil relevan), dan **Under Value** (`under_value`, gaya Lo Kheng Hong — lihat catatan best-effort fundamental di bawah).
 
 ## Login & Peran Admin/User
 
@@ -75,6 +76,7 @@ pages/
   3_Bandarmologi.py
   4_Watchlist_Alert.py
   5_Strategy_Screener.py
+  6_Rekomendasi.py          # Swing / BPJS / Under Value siap pakai
 invezgo/client.py           # Wrapper tipis untuk Invezgo REST API
 utils/
   auth.py                   # Gerbang login seluruh app (require_login), tab Daftar, ganti password sendiri
@@ -87,13 +89,17 @@ utils/
 screening/                  # Engine Strategy Screener
   technicals.py             # Field Registry teknikal (SMA/EMA/MACD/RSI/ATR/ADX/Donchian/OBV/VWAP, dll)
   broker.py                 # Field Registry bandarmologi (broker_net_value, inventory, konsentrasi top-5)
+  fundamentals.py           # Field Registry fundamental best-effort (per/pbv/roe via keystat-chart)
+  dates.py                  # Normalisasi tanggal tz-aware vs tz-naive (lihat catatan bug di bawah)
   candlestick.py            # Deteksi pola candle (hammer, bullish engulfing, dragonfly doji, inside-day break)
   condition_tree.py         # Evaluator and/or/not + agregator (sum/avg/streak/sign_change/slope/pct_change)
   engine.py                 # Orkestrasi fetch->enrich->evaluate, screening boolean & ranking komposit
-  strategies/*.json         # 11 definisi strategi (data, bukan kode — lihat prinsip di §9 spesifikasi)
+  universe.py                # Daftar default ~40 saham likuid dipakai Strategy Screener & Rekomendasi
+  strategies/*.json         # 13 definisi strategi (data, bukan kode — lihat prinsip di §9 spesifikasi)
 tests/
   test_engine_offline.py    # Smoke test field registry + semua strategi pakai data sintetis (tanpa API call)
   test_engine_run.py        # Smoke test run_screening/run_ranking end-to-end pakai fake client
+  test_fundamentals_offline.py # fundamentals.py + bpjs_intraday/under_value end-to-end pakai fake client
   test_key_store_offline.py # Round-trip simpan/baca API key, mode terenkripsi vs fallback
   test_user_store_offline.py# Seeding admin default, login, ganti password, guard admin terakhir
   test_registration_offline.py # Gating kode undangan, role selalu "user", validasi input
@@ -104,6 +110,7 @@ Jalankan smoke test (tanpa API key, tanpa panggilan jaringan):
 ```bash
 python -m tests.test_engine_offline
 python -m tests.test_engine_run
+python -m tests.test_fundamentals_offline
 python -m tests.test_key_store_offline
 python -m tests.test_user_store_offline
 python -m tests.test_registration_offline
@@ -117,4 +124,9 @@ python -m tests.test_registration_offline
   - `value` (nilai transaksi) didekati dengan `close × volume` (bukan angka transaksi eksak).
   - `broker_concentration_top5` didekati dari broker-broker signifikan yang dikembalikan endpoint inventory (bukan dari total volume pasar sesungguhnya).
   - `anchored_vwap` di-anchor dari awal rentang data yang diambil, bukan dari tanggal event tertentu.
-  - Field fundamental (`per`, `pbv`, `roe`, dst) dan `foreign_net_value`/`news`/`disclosure` belum diimplementasikan karena tidak dipakai strategi manapun di v1 — mereferensikannya di strategi baru akan menghasilkan error validasi yang jelas (sesuai §1 spesifikasi), bukan disilent-skip.
+  - `foreign_net_value`/`news`/`disclosure` belum diimplementasikan karena tidak dipakai strategi manapun di v1 — mereferensikannya di strategi baru akan menghasilkan error validasi yang jelas (sesuai §1 spesifikasi), bukan disilent-skip.
+- **Field fundamental (`per`, `pbv`, `roe`) — best-effort, bukan data pasti.** Endpoint fundamental Invezgo (`/analysis/keystat-chart`) tidak mendokumentasikan nama statistik yang valid secara lengkap di spec-nya (cuma "ROE" muncul sebagai contoh parameter). `screening/fundamentals.py` mencoba beberapa nama kandidat ("PER"/"PE", "PBV"/"PB", "ROE") dan memakai yang pertama berhasil; kalau semua kandidat gagal, field itu dianggap tidak tersedia (bukan error) dan strategi terkait (`under_value`) otomatis gagal untuk saham itu. **Begitu dipakai dengan API key asli, cek nama statistik mana yang benar-benar valid dan sempit-kan `_STAT_CANDIDATES` di kode** — jangan percaya hasil Under Value sebelum diverifikasi manual.
+
+### Bug yang sudah diperbaiki (dicatat untuk transparansi)
+
+Ditemukan saat menambah test untuk BPJS: **semua field bandarmologi (`broker_net_value`, `broker_net_value_top5`, `broker_inventory`, `broker_concentration_top5`) diam-diam selalu terbaca 0/kosong**, sejak fitur Strategy Screener pertama dibangun. Penyebabnya endpoint chart (`/analysis/chart/stock`) mengembalikan tanggal tz-aware ("...Z"), sedangkan endpoint broker (`/analysis/inventory-chart/stock`) mengembalikan tanggal tz-naive ("YYYY-MM-DD") — saat kedua seri di-*reindex* jadi satu, pandas menganggap tanggal yang sama itu TIDAK cocok, jadi seluruh data broker jatuh ke nilai default 0 tanpa error apapun. Ini berarti strategi apa pun yang mensyaratkan kondisi broker (`breakout_broker_confirm`, `stealth_accumulation`, `oversold_reversal`, `trend_pullback`, `broker_rotation_warning`, komponen "skor_konviksi_broker" di `composite_ranking`) sebelumnya **tidak pernah benar-benar mengecek broker** terhadap data API asli — kondisi broker selalu gagal (atau, untuk `composite_ranking`, sub-skornya selalu netral). Diperbaiki di `screening/dates.py` (normalisasi tanggal konsisten sebelum reindex) dan sudah diverifikasi lewat test yang secara spesifik mengisolasi kondisi broker-only (`tests/test_fundamentals_offline.py`).

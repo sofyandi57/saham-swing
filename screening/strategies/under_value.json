@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "id": "under_value",
+  "name": "Under Value — Saham Murah Secara Fundamental",
+  "thesis": "Gaya value investing ala Lo Kheng Hong ('Rule of 9'): saham dengan PER dan PBV rendah punya margin keamanan lebih besar, selama profitabilitasnya masih positif (bukan value trap). CATATAN PENTING: field per/pbv/roe di sini bersifat best-effort — endpoint fundamental Invezgo belum terdokumentasi lengkap soal nama statistik yang valid, jadi hasil di sini WAJIB diverifikasi manual (mis. cek laporan keuangan langsung) sebelum dipakai keputusan.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 1000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 60 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "per", "op": ">", "value": 0 },
+      { "field": "per", "op": "<", "value": 10 },
+      { "field": "pbv", "op": ">", "value": 0 },
+      { "field": "pbv", "op": "<", "value": 1.5 },
+      { "field": "per_pbv", "op": "<", "value": 9 },
+      { "field": "roe", "op": ">", "value": 0 }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [],
+  "scoring": null
+}

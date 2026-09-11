@@ -11,6 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from screening.dates import normalize_dates
+
 
 def _broker_daily_frame(raw: dict) -> pd.DataFrame:
     """Pivot inventory-chart raw JSON into a date x broker matrix of daily net values."""
@@ -22,7 +24,7 @@ def _broker_daily_frame(raw: dict) -> pd.DataFrame:
         if not data:
             continue
         s = pd.DataFrame(data)
-        s["date"] = pd.to_datetime(s["date"]).dt.normalize()
+        s["date"] = normalize_dates(s["date"])
         s = s.groupby("date")["value"].sum()
         s.name = code
         frames.append(s)

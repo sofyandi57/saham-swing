@@ -149,6 +149,10 @@ class InvezgoClient:
     def chart_multi_time(self, code: str, frm: str, to: str, timeframe: str):
         return self.get(f"/analysis/chart/multi-time/{code}", **{"from": frm, "to": to, "timeframe": timeframe})
 
+    # -- fundamentals -----------------------------------------------------
+    def keystat_chart(self, code: str, type_: str, name: str, limit: str = "1"):
+        return self.get(f"/analysis/keystat-chart/{code}", type=type_, name=name, limit=limit)
+
     # -- broker / bandarmologi -------------------------------------------
     def summary_stock(self, code: str, frm: str, to: str, investor: str = "all", market: str = "RG"):
         return self.get(

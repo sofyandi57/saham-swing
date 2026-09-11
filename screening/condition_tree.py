@@ -14,11 +14,14 @@ import numpy as np
 import pandas as pd
 
 from screening.broker import BROKER_FIELDS
+from screening.fundamentals import FUNDAMENTAL_FIELDS
 from screening.technicals import TECHNICAL_FIELDS
 
 CATEGORICAL_FIELDS = {"candlestick_pattern"}
 SCALAR_FIELDS = {"history_days_available"}
-SUPPORTED_FIELDS = set(TECHNICAL_FIELDS) | set(BROKER_FIELDS) | CATEGORICAL_FIELDS | SCALAR_FIELDS
+SUPPORTED_FIELDS = (
+    set(TECHNICAL_FIELDS) | set(BROKER_FIELDS) | set(FUNDAMENTAL_FIELDS) | CATEGORICAL_FIELDS | SCALAR_FIELDS
+)
 
 _OPS = {
     ">": _op.gt, ">=": _op.ge, "<": _op.lt, "<=": _op.le,
@@ -31,10 +34,17 @@ class FieldError(ValueError):
 
 
 class FieldContext:
-    def __init__(self, technical_df: pd.DataFrame, broker_fields: dict, candlestick_patterns: set[str]):
+    def __init__(
+        self,
+        technical_df: pd.DataFrame,
+        broker_fields: dict,
+        candlestick_patterns: set[str],
+        fundamentals: dict | None = None,
+    ):
         self.technical_df = technical_df
         self.broker_fields = broker_fields
         self.candlestick_patterns = candlestick_patterns
+        self.fundamentals = fundamentals or {}
         self.history_days_available = len(technical_df)
 
     def get_series(self, field_id: str) -> pd.Series:
@@ -45,8 +55,14 @@ class FieldContext:
             if series.empty:
                 return series
             return series.reindex(self.technical_df.index, fill_value=0.0)
+        if field_id in FUNDAMENTAL_FIELDS:
+            value = self.fundamentals.get(field_id)
+            if value is None:
+                return pd.Series(dtype=float)
+            return pd.Series([value] * len(self.technical_df), index=self.technical_df.index)
         raise FieldError(
-            f"Field '{field_id}' tidak ada di Field Registry (screening/technicals.py atau screening/broker.py)."
+            f"Field '{field_id}' tidak ada di Field Registry "
+            f"(screening/technicals.py, screening/broker.py, atau screening/fundamentals.py)."
         )
 
 

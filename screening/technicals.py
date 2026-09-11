@@ -13,6 +13,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from screening.dates import normalize_dates
+
 
 def _wilder_smooth(series: pd.Series, period: int) -> pd.Series:
     return series.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
@@ -130,8 +132,10 @@ def enrich(df: pd.DataFrame, anchor_idx: int = 0) -> pd.DataFrame:
     df["dist_to_ema21_atr"] = (df["close"] - df["ema21"]) / atr_safe
     df["low_dist_to_ema21_atr"] = (df["low"] - df["ema21"]) / atr_safe
     df["dist_to_support_pct"] = (df["close"] - df["donchian20_lower"]) / df["donchian20_lower"] * 100
+    df["change_pct_1d"] = df["close"].pct_change(1) * 100
+    df["atr_pct"] = df["atr14"] / df["close"].replace(0, np.nan) * 100
 
-    df = df.set_index(pd.to_datetime(df["date"]).dt.normalize())
+    df = df.set_index(normalize_dates(df["date"]))
     return df
 
 
@@ -146,4 +150,5 @@ TECHNICAL_FIELDS = [
     "roc10", "obv_slope",
     "donchian20_width_pct", "dist_to_vwap_atr", "dist_to_ema21_atr",
     "low_dist_to_ema21_atr", "dist_to_support_pct",
+    "change_pct_1d", "atr_pct",
 ]

@@ -13,6 +13,7 @@ import pandas as pd
 from invezgo import InvezgoAPIError
 from screening import broker as broker_mod
 from screening import candlestick
+from screening import fundamentals as fundamentals_mod
 from screening import technicals
 from screening.condition_tree import (
     FieldContext,
@@ -64,7 +65,9 @@ def validate_strategy(strategy: dict) -> set[str]:
     return field_ids
 
 
-def fetch_ticker_context(client, code: str, frm: str, to: str, broker_limit: int = 10) -> FieldContext | None:
+def fetch_ticker_context(
+    client, code: str, frm: str, to: str, broker_limit: int = 10, need_fundamentals: bool = False
+) -> FieldContext | None:
     candles = client.chart_stock(code, frm, to)
     if not candles:
         return None
@@ -81,7 +84,9 @@ def fetch_ticker_context(client, code: str, frm: str, to: str, broker_limit: int
     broker_fields = broker_mod.build_broker_fields(raw_inventory or {"broker": []})
 
     patterns = candlestick.detect_last_patterns(df.tail(5))
-    return FieldContext(technical_df, broker_fields, patterns)
+
+    fund = fundamentals_mod.fetch_fundamentals(client, code) if need_fundamentals else {}
+    return FieldContext(technical_df, broker_fields, patterns, fundamentals=fund)
 
 
 def evaluate_strategy_for_ticker(strategy: dict, ctx: FieldContext) -> dict:
@@ -122,14 +127,15 @@ def evaluate_strategy_for_ticker(strategy: dict, ctx: FieldContext) -> dict:
 
 
 def run_screening(client, strategy: dict, codes: list[str], frm: str, to: str, progress_cb=None) -> list[dict]:
-    validate_strategy(strategy)
+    field_ids = validate_strategy(strategy)
+    need_fundamentals = bool(field_ids & set(fundamentals_mod.FUNDAMENTAL_FIELDS))
     results = []
     for i, code in enumerate(codes):
         if progress_cb:
             progress_cb(i, len(codes), code)
         row = {"code": code}
         try:
-            ctx = fetch_ticker_context(client, code, frm, to)
+            ctx = fetch_ticker_context(client, code, frm, to, need_fundamentals=need_fundamentals)
         except InvezgoAPIError as e:
             row["error"] = e.message
             results.append(row)
@@ -175,7 +181,8 @@ SCORING_FIELD_ALIASES = {"broker_net_value_streak"}
 def run_ranking(client, strategy: dict, codes: list[str], frm: str, to: str, progress_cb=None) -> dict:
     scoring = strategy["scoring"]
     components = scoring["components"]
-    validate_strategy(strategy)
+    field_ids = validate_strategy(strategy)
+    need_fundamentals = bool(field_ids & set(fundamentals_mod.FUNDAMENTAL_FIELDS))
 
     universe_filter = strategy.get("universe_filter")
     raw_values: dict[str, dict] = {}
@@ -186,7 +193,7 @@ def run_ranking(client, strategy: dict, codes: list[str], frm: str, to: str, pro
         if progress_cb:
             progress_cb(i, len(codes), code)
         try:
-            ctx = fetch_ticker_context(client, code, frm, to)
+            ctx = fetch_ticker_context(client, code, frm, to, need_fundamentals=need_fundamentals)
         except InvezgoAPIError as e:
             skipped.append({"code": code, "error": e.message})
             continue

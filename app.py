@@ -146,7 +146,7 @@ if auth.is_admin():
 st.divider()
 
 st.subheader("Navigasi")
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
     st.page_link("pages/1_Screener.py", label="🔍 Screener", icon="🔍")
     st.caption("Top gainers/losers, akumulasi asing/ritel, & custom formula screener.")
@@ -161,7 +161,10 @@ with c4:
     st.caption("Kelola watchlist pribadi dan alert formula real-time.")
 with c5:
     st.page_link("pages/5_Strategy_Screener.py", label="🧠 Strategy Screener", icon="🧠")
-    st.caption("11 strategi swing + bandarmologi siap pakai, plus ranking komposit multi-saham.")
+    st.caption("13 strategi swing + bandarmologi siap pakai, plus ranking komposit multi-saham.")
+with c6:
+    st.page_link("pages/6_Rekomendasi.py", label="💡 Rekomendasi", icon="💡")
+    st.caption("3 jenis rekomendasi siap pakai: Swing, BPJS, dan Under Value.")
 
 st.divider()
 

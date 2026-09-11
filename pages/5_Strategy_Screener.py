@@ -6,6 +6,7 @@ import streamlit as st
 from invezgo import InvezgoAPIError
 from screening import engine
 from screening.condition_tree import FieldError
+from screening.universe import LIQUID_DEFAULT
 from utils import auth
 from utils.formatting import compact_number, days_ago, last_trading_day, pct, rupiah
 from utils.state import require_client
@@ -20,13 +21,6 @@ st.caption(
 )
 
 client = require_client()
-
-LIQUID_DEFAULT = [
-    "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF", "KLBF",
-    "ANTM", "MDKA", "PGAS", "PTBA", "ADRO", "ITMG", "INCO", "TINS", "SMGR", "INTP",
-    "CPIN", "JPFA", "AALI", "EXCL", "ISAT", "TOWR", "MNCN", "SCMA", "GOTO", "ARTO",
-    "BRIS", "BBTN", "AKRA", "UNTR", "HRUM", "HMSP", "GGRM", "PWON", "CTRA", "BSDE",
-]
 
 MAX_UNIVERSE = 60
 

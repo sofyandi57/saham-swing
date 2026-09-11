@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "id": "bpjs_intraday",
+  "name": "BPJS — Beli Pagi Jual Sore",
+  "thesis": "\"BPJS\" adalah istilah trader retail untuk day trading: beli pagi saat market buka, jual sore hari yang sama. Karena Invezgo hanya menyediakan data intraday live (bukan histori intraday untuk backtest), kandidat terbaik yang bisa dihitung dari data EOD adalah saham yang HARI INI sudah menunjukkan momentum kuat + volume abnormal + likuiditas tinggi (mudah keluar-masuk tanpa slippage) + broker top-5 net buy — ciri klasik saham yang punya kans lanjut sampai sore. Jalankan screening ini di pagi/awal sesi untuk hasil paling relevan.",
+  "universe_filter": {
+    "and": [
+      { "field": "avg_value_20d", "op": ">=", "value": 3000000000 },
+      { "field": "history_days_available", "op": ">=", "value": 30 }
+    ]
+  },
+  "conditions": {
+    "and": [
+      { "field": "change_pct_1d", "op": ">", "value": 2 },
+      { "field": "volume_spike_ratio", "op": ">", "value": 1.5 },
+      { "field": "atr_pct", "op": ">", "value": 2 },
+      { "field": "broker_net_value_top5", "agg": "sum", "window": 1, "op": ">", "value": 0 }
+    ]
+  },
+  "exclude_if": null,
+  "confirmations": [
+    { "field": "broker_net_value", "agg": "streak_positive", "op": ">=", "value": 2 }
+  ],
+  "scoring": null
+}
